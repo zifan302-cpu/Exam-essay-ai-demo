@@ -1,0 +1,6 @@
+docs/
+dist/
+node_modules/
+.edge-profile/
+business-plan-preview.png
+*.log

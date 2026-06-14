@@ -1,0 +1,12 @@
+{
+  "name": "exam-essay-ai-demo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:with-docs": "node -e \"process.env.INCLUDE_DOCS='1'; import('./scripts/build.mjs')\"",
+    "dev": "node scripts/serve.mjs",
+    "preview": "node scripts/serve.mjs dist 4173"
+  }
+}
