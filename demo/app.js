@@ -282,15 +282,24 @@ async function generateResult(data) {
 }
 
 async function createRemoteResult(data) {
-  const response = await fetch("/api/generate-postgraduate", {
+  const response = await fetch(getApiEndpoint(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  const payload = await response.json().catch(() => ({}));
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("云端 API 没有返回 JSON，可能后端函数未部署。");
+  }
+
+  const payload = await response.json();
 
   if (!response.ok) {
     throw new Error(payload.message || payload.detail || payload.error || "Qwen API failed");
+  }
+
+  if (payload.provider !== "dashscope" || !asArray(payload.essay).length) {
+    throw new Error("云端 API 返回结构不完整，已停止伪装为 Qwen 结果。");
   }
 
   const essay = asArray(payload.essay).length ? asArray(payload.essay) : buildLocalEssay(data);
@@ -313,6 +322,10 @@ async function createRemoteResult(data) {
     vocab: asArray(payload.vocab).length ? payload.vocab : buildLocalVocab(),
     diagnosis: buildDiagnosisCards(payload, data),
   };
+}
+
+function getApiEndpoint() {
+  return window.POSTGRADUATE_API_URL || "/api/generate-postgraduate";
 }
 
 function buildDiagnosisCards(payload, data) {
