@@ -1,4 +1,4 @@
-const CACHE_NAME = "exam-essay-ai-demo-v1";
+const CACHE_NAME = "exam-essay-ai-demo-v3";
 const APP_ASSETS = [
   "/",
   "/index.html",

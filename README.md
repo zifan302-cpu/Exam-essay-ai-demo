@@ -1,6 +1,6 @@
 # Exam Essay AI Demo
 
-面向雅思、考研英语、四六级等二语考试写作场景的作文辅助 AI 初版项目。
+面向考研英语大作文场景的作文辅助 AI 初版项目。
 
 项目当前包含三部分：
 
@@ -10,11 +10,11 @@
 
 ## 初版定位
 
-初版 demo 不是一个真实 AI 后端产品，而是一个可演示的产品原型。它用本地规则和模板模拟生成结果，用来验证：
+初版 demo 已经接入阿里云百炼 Qwen。没有配置 API Key 时会使用本地规则和模板模拟生成结果；配置 `DASHSCOPE_API_KEY` 后，会优先调用 Qwen 生成考研英语大作文。
 
 - 考生是否愿意输入题目和自己的思路。
-- 输出是否比通用 AI 更贴合考试审美与个人水平。
-- “作文 + 结构 + 可迁移句型 + 词汇包 + 诊断建议”是否能形成学习价值。
+- 输出是否比通用 AI 更贴合考研英语大作文审美。
+- “提纲 + 高分稿 + 句型 + 词汇 + 阅卷诊断”是否能形成学习价值。
 
 ## 本地体验
 
@@ -66,6 +66,49 @@ npm run build:with-docs
 - Install Command：默认即可
 
 项目也加入了 `.vercelignore`，默认排除 `docs/`、`dist/`、`node_modules/` 和临时文件，避免把商业计划等本地材料上传到 Vercel。
+
+## Qwen API 配置
+
+当前真实大模型调用只接入“考研英语大作文”场景。雅思和四六级入口已从页面移除。
+
+推荐主模型：
+
+```text
+qwen3.7-plus
+```
+
+理由：它在千问文本生成模型中处于质量与成本的平衡位，适合作为考研英语作文主生成模型。需要更低成本压测时可改为 `qwen3.6-flash`；需要更高质量精修时可改为 `qwen3.7-max`。
+
+生成链路当前采用质量优先策略：
+
+```text
+题目与用户想法 -> 内部提纲 -> 高分稿 -> 阅卷评分 -> 修订后输出
+```
+
+输出包含：
+
+```text
+高分稿 / 成文提纲 / 可迁移句型 / 词汇表达 / 阅卷评分与修改建议
+```
+
+在 Vercel 项目的 Environment Variables 中配置：
+
+```text
+DASHSCOPE_API_KEY=你的阿里云百炼 API Key
+DASHSCOPE_MODEL=qwen3.7-plus
+```
+
+前端不会直接保存 API Key。真实调用会经过 Vercel Serverless Function：
+
+```text
+api/generate-postgraduate.js
+```
+
+该接口使用阿里云百炼 OpenAI 兼容模式调用：
+
+```text
+https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+```
 
 ### 方式一：Vercel 网页导入
 

@@ -1,7 +1,7 @@
 {
-  "name": "二语考试作文 AI 辅助器",
-  "short_name": "作文 AI",
-  "description": "面向雅思、考研英语、四六级等二语考试作文场景的个人化写作辅助 demo。",
+  "name": "考研英语大作文 AI 训练器",
+  "short_name": "考研作文 AI",
+  "description": "面向考研英语大作文场景的提纲规划、高分成文与阅卷诊断 demo。",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

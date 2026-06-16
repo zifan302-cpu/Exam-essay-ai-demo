@@ -1,4 +1,10 @@
 const form = document.querySelector("#essayForm");
+const submitButton = form.querySelector(".primary-button");
+const examPaperInput = document.querySelector("#examPaper");
+const taskTypeInput = document.querySelector("#taskType");
+const targetScoreInput = document.querySelector("#targetScore");
+const userLevelInput = document.querySelector("#userLevel");
+const ideaPolicyInput = document.querySelector("#ideaPolicy");
 const topicInput = document.querySelector("#topic");
 const ideasInput = document.querySelector("#ideas");
 const complexityInput = document.querySelector("#complexity");
@@ -13,6 +19,7 @@ const matchScore = document.querySelector("#matchScore");
 const wordCount = document.querySelector("#wordCount");
 const toneLabel = document.querySelector("#toneLabel");
 const scoreNumber = document.querySelector("#scoreNumber");
+const scoreCaption = document.querySelector("#scoreCaption");
 const essayTags = document.querySelector("#essayTags");
 const essayOutput = document.querySelector("#essayOutput");
 const outlineOutput = document.querySelector("#outlineOutput");
@@ -24,93 +31,77 @@ let currentResult = null;
 
 const sample = {
   topic:
-    "Some people believe that artificial intelligence will make education more equal, while others worry it may widen the gap. Discuss both views and give your own opinion.",
+    "Directions: Write an essay of 160-220 words based on the following topic: The increasing use of artificial intelligence in education has brought both opportunities and challenges. You should discuss its influence on students' learning and give your own opinion.",
   ideas:
-    "AI can provide low-cost feedback for students who cannot afford tutors.\nStudents with stronger self-discipline and better digital access may benefit more.\nMy view: schools should combine AI tools with teacher guidance and transparent rules.",
+    "AI can give students quick feedback and help them practise writing more often.\nSome students may depend on AI too much and stop thinking independently.\nMy view is that AI should be used as a learning assistant, not as a replacement for teachers or students' own effort.\nSchools should teach students to use AI responsibly.",
 };
 
-const examProfiles = {
-  ielts: {
-    name: "IELTS Task 2",
-    targetUnit: "Band",
-    wordGoal: "260-300",
-    tone: "Academic",
-    promise: "观点清晰、双边论证、结尾明确表态",
-    paragraphs: ["Introduction", "Body 1", "Body 2", "Conclusion"],
+const examPaperProfiles = {
+  english1: {
+    label: "英语一大作文",
+    scoreMax: 20,
+    wordGoal: "160-220 words",
+    topBand: "16-20 分",
   },
-  postgraduate: {
-    name: "考研英语大作文",
-    targetUnit: "Score",
-    wordGoal: "180-220",
-    tone: "Formal",
-    promise: "现象解释、原因分析、建议收束",
-    paragraphs: ["描述现象", "分析原因", "提出建议", "总结升华"],
-  },
-  cet: {
-    name: "四六级议论文",
-    targetUnit: "Level",
-    wordGoal: "160-200",
-    tone: "Clear",
-    promise: "立场明确、例证直观、表达稳妥",
-    paragraphs: ["开头点题", "主体论证", "举例说明", "结尾总结"],
+  english2: {
+    label: "英语二大作文",
+    scoreMax: 15,
+    wordGoal: "160-220 words",
+    topBand: "12-15 分",
   },
 };
 
-const levelProfiles = {
+const taskTypeProfiles = {
+  "text-discussion": "文字材料议论文",
+  "chart-description": "图表/图画文字描述",
+};
+
+const targetScoreProfiles = {
+  safe: "稳妥提分",
+  high: "高分冲刺",
+  excellent: "范文级表达",
+};
+
+const userLevelProfiles = {
   foundation: {
-    label: "基础可用",
-    tone: "稳妥",
-    control: "短句为主，减少嵌套从句",
+    label: "基础稳分",
+    control: "句式要稳，优先准确，亮点表达保持少而准。",
   },
   intermediate: {
-    label: "中等进阶",
-    tone: "自然",
-    control: "句式有变化，避免炫技",
+    label: "中等提分",
+    control: "在准确基础上增加过渡、同义替换和适度复杂句。",
   },
   advanced: {
-    label: "冲刺高分",
-    tone: "亮眼",
-    control: "允许更强逻辑连接和抽象表达",
+    label: "高分冲刺",
+    control: "允许更成熟的抽象表达，但仍避免堆砌生僻词。",
   },
+};
+
+const ideaPolicyProfiles = {
+  preserve: "尽量保留我的观点",
+  optimize: "保留核心并优化论证",
+  rebuild: "只保留主题方向，重建高分论证",
 };
 
 const complexityNames = {
-  1: "稳妥",
-  2: "清晰",
-  3: "适中",
-  4: "有亮点",
-  5: "冲刺高分",
+  1: "稳妥准确",
+  2: "清晰自然",
+  3: "标准高分",
+  4: "适度亮点",
+  5: "冲刺表达",
 };
 
 function getFormData() {
-  const data = new FormData(form);
   return {
-    examType: data.get("examType"),
-    targetBand: data.get("targetBand"),
-    level: data.get("level"),
-    stance: data.get("stance"),
+    examPaper: examPaperInput.value,
+    taskType: taskTypeInput.value,
+    targetScore: targetScoreInput.value,
+    userLevel: userLevelInput.value,
+    ideaPolicy: ideaPolicyInput.value,
     topic: topicInput.value.trim(),
     ideas: ideasInput.value.trim(),
     complexity: Number(complexityInput.value),
   };
-}
-
-function hasChinese(text) {
-  return /[\u4e00-\u9fff]/.test(text);
-}
-
-function cleanTopic(topic) {
-  const compact = topic.replace(/\s+/g, " ").trim();
-  if (!compact) {
-    return "this social issue";
-  }
-  if (hasChinese(compact)) {
-    return "the issue described in the prompt";
-  }
-  if (compact.length > 120) {
-    return compact.slice(0, 117) + "...";
-  }
-  return compact;
 }
 
 function splitIdeas(rawIdeas) {
@@ -119,332 +110,247 @@ function splitIdeas(rawIdeas) {
     .map((item) => item.trim())
     .filter(Boolean);
 
-  if (parts.length >= 3) {
-    return parts.slice(0, 5);
-  }
-
-  return [
-    ...parts,
-    "The answer should consider both short-term convenience and long-term learning outcomes.",
-    "A strong essay should move beyond slogans and explain who benefits, who may be harmed, and under what conditions.",
-    "The final position can be moderate: use the tool, but keep human judgment and fair access in the system.",
-  ].slice(0, 5);
+  return parts.length
+    ? parts.slice(0, 6)
+    : [
+        "The essay should explain the social meaning behind the topic.",
+        "It should present a clear position rather than list empty slogans.",
+        "It should connect individual development with broader social progress.",
+      ];
 }
 
-function stanceSentence(stance) {
-  if (stance === "support") {
-    return "I therefore lean towards the positive side, as long as the change is introduced with proper safeguards.";
-  }
-  if (stance === "oppose") {
-    return "I therefore remain cautious, because the possible costs may outweigh the short-term convenience.";
-  }
-  return "My view is that both concerns are valid, but the outcome depends on how the change is governed and taught.";
+function cleanTopic(topic) {
+  const compact = topic.replace(/\s+/g, " ").trim();
+  const topicMatch = compact.match(/topic:\s*(.+)$/i);
+  return (topicMatch ? topicMatch[1] : compact) || "the given topic";
 }
 
-function chooseConnectors(complexity) {
-  if (complexity <= 2) {
-    return ["First", "Also", "However", "As a result", "In conclusion"];
-  }
-  if (complexity === 3) {
-    return ["To begin with", "More importantly", "Nevertheless", "For this reason", "Overall"];
-  }
-  return ["At a practical level", "More fundamentally", "That said", "This is why", "Taken together"];
-}
-
-function buildEssay(data) {
-  const profile = examProfiles[data.examType];
-  const level = levelProfiles[data.level];
+function buildLocalEssay(data) {
   const topic = cleanTopic(data.topic);
   const ideas = splitIdeas(data.ideas);
-  const connectors = chooseConnectors(data.complexity);
-  const stance = stanceSentence(data.stance);
-
-  if (data.examType === "postgraduate") {
-    return [
-      `The discussion around ${topic} reflects a wider change in the way people study, work and make decisions. It is not enough to praise new tools blindly or reject them out of fear. What matters is whether they can help ordinary learners build real ability instead of only producing a polished surface.`,
-      `${connectors[0]}, ${ideas[0].replace(/\.$/, "")}. This point is especially important for students who do not have constant access to expensive tutoring or high-quality feedback. A useful system can lower the cost of practice and make revision more frequent. ${connectors[1]}, ${ideas[1].replace(/\.$/, "")}. If access, discipline and guidance are uneven, the same tool may create very different results among different groups of students.`,
-      `${connectors[2]}, the solution is not to avoid technology, but to use it with clear educational rules. ${ideas[2].replace(/\.$/, "")}. Schools and learners should treat AI output as a draft, a mirror and a training material, rather than as a final answer. In this way, students can learn how an argument is organized, why a sentence works, and which expressions can be reused in a new topic.`,
-      `${connectors[4]}, I believe that the value of such tools depends on thoughtful use. When technology is combined with human judgment, fair access and repeated practice, it can improve writing ability instead of weakening it.`,
-    ];
-  }
-
-  if (data.examType === "cet") {
-    return [
-      `Nowadays, ${topic} has become a topic that many students and teachers discuss. Different people hold different views, but I believe the key is to use new methods in a balanced and responsible way.`,
-      `${connectors[0]}, ${ideas[0].replace(/\.$/, "")}. This can help learners receive feedback more quickly and practise more often. ${connectors[1]}, ${ideas[1].replace(/\.$/, "")}. If some students have better resources or stronger self-control, they may improve faster than others.`,
-      `${connectors[2]}, this problem can be reduced if schools give students clear guidance. For example, teachers can ask students to compare an AI draft with their own writing, collect useful expressions, and revise the essay step by step. In this process, the tool becomes part of learning rather than a shortcut.`,
-      `${connectors[4]}, I support careful use of this kind of tool. It should help students think, write and review, but it should not replace their own effort.`,
-    ];
-  }
 
   return [
-    `In recent years, ${topic} has moved from a specialist discussion to a practical question for ordinary learners. Some people welcome this change because it seems to make support more accessible, whereas others worry that it may simply reward students who already have stronger resources. ${stance}`,
-    `${connectors[0]}, the optimistic view is understandable. ${ideas[0].replace(/\.$/, "")}. For many learners, especially those who cannot afford frequent private tutoring, instant feedback can turn writing from an occasional task into a repeatable habit. It also allows students to test different ways of organizing an argument before they meet a teacher, which makes later feedback more efficient.`,
-    `${connectors[2]}, the concern about inequality should not be dismissed. ${ideas[1].replace(/\.$/, "")}. A student with reliable internet access, strong self-discipline and good guidance may use the same tool to improve reasoning, vocabulary and revision. Another student may only copy a fluent answer without understanding why it works. In that case, the technology widens the gap not because it is useless, but because it is used without a learning system.`,
-    `${connectors[3]}, the most reasonable approach is to combine technical support with human guidance. ${ideas[2].replace(/\.$/, "")}. Teachers can require students to explain the outline, replace unsuitable expressions and collect sentence patterns that match their own level. Such a process keeps the efficiency of AI while still protecting the deeper goal of education: independent thinking and controlled communication.`,
-    `${connectors[4]}, I believe ${topic} can be beneficial, but only when it is treated as a training partner rather than a substitute writer. If access is fair and the output is turned into reusable knowledge, it can help more students write with clarity, depth and confidence.`,
+    `In recent years, ${topic} has become a topic of growing public attention. It is not merely a technical or personal issue, but a question closely related to students' development and the quality of education. A balanced view is therefore needed.`,
+    `To begin with, ${ideas[0].replace(/\.$/, "")}. This is meaningful because timely support can make learning more efficient and encourage students to revise their work more frequently. For many learners, repeated practice is often more important than one impressive answer.`,
+    `However, ${ideas[1]?.replace(/\.$/, "") || "the possible risks should not be ignored"}. If students rely on ready-made answers, they may gradually lose the habit of independent thinking. Education should help people form judgment, not simply give them fluent sentences.`,
+    `From my perspective, ${ideas[2]?.replace(/\.$/, "") || "the key lies in responsible use"}. Schools and students should treat new tools as assistants rather than substitutes. Only in this way can efficiency lead to real progress in learning.`,
   ];
 }
 
-function buildOutline(data, essay) {
-  const profile = examProfiles[data.examType];
-  const ideas = splitIdeas(data.ideas);
-  return profile.paragraphs.map((name, index) => {
-    const paragraph = essay[index] || essay[essay.length - 1];
-    const focus =
-      index === 0
-        ? "引入题目，建立问题意识，并给出整体立场。"
-        : index === profile.paragraphs.length - 1
-          ? "回收主张，避免空泛口号，形成自然结尾。"
-          : `展开论证：${ideas[index - 1] || ideas[0]}`;
-    return {
-      name,
-      focus,
-      sample: paragraph,
-    };
-  });
+function buildLocalOutline(data, essay) {
+  const names = ["开头点题", "正面论证", "风险分析", "观点收束"];
+  const focuses = [
+    "引出题目，说明其教育或社会意义，避免一上来空泛表态。",
+    "承接用户观点，解释积极影响，并加入结果说明。",
+    "处理潜在问题，体现辩证思考和考研作文的论证层次。",
+    "明确个人立场，给出可执行的收束建议。",
+  ];
+
+  return names.map((name, index) => ({
+    name,
+    focus: focuses[index],
+    sample: essay[index],
+  }));
 }
 
-function buildPatterns(data) {
-  const topic = cleanTopic(data.topic);
-  const level = levelProfiles[data.level];
+function buildLocalPatterns() {
   return [
     {
-      title: "双边讨论开头",
-      note: "适合雅思和考研大作文开头，先承认争议，再收束到自己的判断。",
-      pattern:
-        "Some people welcome this change because ..., whereas others worry that .... My view is that ... depends on how it is used.",
+      title: "现象引入",
+      note: "适合考研大作文第一段，语气正式但不夸张。",
+      pattern: "In recent years, ... has become a topic of growing public attention.",
     },
     {
-      title: "论证深度推进",
-      note: "用来避免只写优缺点，把问题推进到条件、对象和结果。",
-      pattern:
-        "The real question is not whether " + topic + " is useful, but who can benefit from it and under what conditions.",
+      title: "意义提升",
+      note: "把具体问题上升到教育、社会或个人发展层面。",
+      pattern: "It is not merely a personal issue, but a question closely related to ...",
     },
     {
-      title: "反方让步",
-      note: "适合在第二个主体段处理风险，体现思辨性。",
-      pattern:
-        "This concern should not be dismissed, because the same tool may produce very different outcomes among different learners.",
+      title: "正面论证",
+      note: "用于主体段解释原因和结果。",
+      pattern: "This is meaningful because ..., which can further lead to ...",
     },
     {
-      title: "学习型结尾",
-      note: "把工具价值和个人能力连接起来，适合本产品强调的学习转化。",
-      pattern:
-        "It should be treated as a training partner rather than a substitute, so that efficiency can lead to real improvement.",
+      title: "风险让步",
+      note: "避免文章只有单边论证。",
+      pattern: "However, the possible risks should not be ignored.",
     },
     {
-      title: "个人水平控制",
-      note: `当前选择：${level.control}。`,
-      pattern:
-        "A strong answer does not need rare words; it needs clear logic, controlled sentences and examples that directly support the claim.",
+      title: "结尾收束",
+      note: "适合从工具、个人和学校责任角度收尾。",
+      pattern: "Only in this way can ... lead to real progress in ...",
     },
   ];
 }
 
-function buildVocab(data) {
-  const base = [
+function buildLocalVocab() {
+  return [
     {
-      word: "accessible support",
-      cn: "可获得的支持",
-      tags: ["education", "fairness"],
-      use: "AI can make writing support more accessible to learners with limited resources.",
-    },
-    {
-      word: "repeatable practice",
-      cn: "可重复练习",
-      tags: ["learning", "habit"],
-      use: "Repeatable practice is more useful than one impressive model essay.",
-    },
-    {
-      word: "human guidance",
-      cn: "人的指导",
-      tags: ["teacher", "control"],
-      use: "Human guidance is still needed to turn a draft into real writing ability.",
-    },
-    {
-      word: "widen the gap",
-      cn: "扩大差距",
-      tags: ["inequality", "risk"],
-      use: "Without fair access, the same technology may widen the gap between students.",
+      word: "timely support",
+      cn: "及时支持",
+      tags: ["education", "writing"],
+      use: "Timely support can make learning more efficient.",
     },
     {
       word: "independent thinking",
       cn: "独立思考",
-      tags: ["argument", "value"],
-      use: "The deeper goal of writing is independent thinking, not fluent copying.",
+      tags: ["ability", "exam"],
+      use: "Students should not lose the habit of independent thinking.",
     },
     {
-      word: "controlled communication",
-      cn: "有控制的表达",
-      tags: ["style", "exam"],
-      use: "High-scoring writing depends on controlled communication rather than decorative language.",
+      word: "responsible use",
+      cn: "负责任地使用",
+      tags: ["technology", "attitude"],
+      use: "Responsible use is the key to making technology beneficial.",
+    },
+    {
+      word: "ready-made answers",
+      cn: "现成答案",
+      tags: ["risk", "learning"],
+      use: "Ready-made answers may weaken students' motivation to think.",
+    },
+    {
+      word: "balanced view",
+      cn: "平衡观点",
+      tags: ["argument", "logic"],
+      use: "A balanced view is needed when discussing this issue.",
+    },
+    {
+      word: "real progress",
+      cn: "真正进步",
+      tags: ["result", "education"],
+      use: "Efficiency should lead to real progress in learning.",
     },
   ];
-
-  if (data.complexity >= 4) {
-    base.push({
-      word: "governed use",
-      cn: "有规则的使用",
-      tags: ["policy", "balance"],
-      use: "Governed use allows schools to keep the benefits of technology while reducing misuse.",
-    });
-  }
-
-  return base;
 }
 
-function buildDiagnosis(data, essay) {
-  const profile = examProfiles[data.examType];
-  const level = levelProfiles[data.level];
+function buildLocalDiagnosis(data, words) {
+  const profile = examPaperProfiles[data.examPaper];
   return [
     {
-      title: "考试贴合度",
-      text: `${profile.name} 需要 ${profile.promise}。当前草稿已围绕该要求组织段落，但真实产品应继续加入更细的评分规则。`,
+      title: "本地模板提示",
+      text: "当前为本地回退结果，不代表 Qwen 的真实生成质量。配置 DASHSCOPE_API_KEY 并通过本地服务或 Vercel 打开后，会优先调用 Qwen。",
     },
     {
-      title: "表达难度",
-      text: `当前控制为“${complexityNames[data.complexity]}”，${level.control}。如果用户目标是短期提分，应优先保证准确和连贯。`,
+      title: "评分口径",
+      text: `${profile.label} 采用 ${profile.scoreMax} 分制。正式生成会输出档位、给分依据和修订建议。`,
     },
     {
-      title: "个人化程度",
-      text: "用户输入的思路已经进入主体段，但初版只是规则拼接。接入大模型后，应要求模型保留用户观点并补足例证。",
+      title: "词数检查",
+      text: `当前约 ${words} 词，目标是 160-220 词。真实生成会强制检查词数。`,
     },
     {
-      title: "复习价值",
-      text: "句型卡片和词汇包可以直接沉淀到个人语料库，这是区别于普通作文生成器的关键学习闭环。",
+      title: "质量方向",
+      text: "下一步重点是先生成提纲，再成文，并让模型按阅卷标准自评后输出修订稿。",
     },
   ];
 }
 
-function countWords(paragraphs) {
-  return paragraphs
-    .join(" ")
-    .split(/\s+/)
-    .filter((word) => /[A-Za-z]/.test(word)).length;
-}
-
-function calculateScore(data, words) {
-  let score = 78;
-  if (data.topic.length > 40) score += 6;
-  if (data.ideas.length > 60) score += 8;
-  if (data.complexity >= 3) score += 4;
-  if (data.level === "advanced") score += 3;
-  if (words > 150) score += 3;
-  return Math.min(score, 96);
-}
-
-function createResult(data) {
-  const essay = buildEssay(data);
+function createLocalResult(data) {
+  const essay = buildLocalEssay(data);
   const words = countWords(essay);
-  const score = calculateScore(data, words);
+  const profile = examPaperProfiles[data.examPaper];
+
   return {
     data,
+    provider: "local",
+    title: `${profile.label}本地示例稿`,
     essay,
     words,
-    score,
-    outline: buildOutline(data, essay),
-    patterns: buildPatterns(data),
-    vocab: buildVocab(data),
-    diagnosis: buildDiagnosis(data, essay),
+    score: Math.round(profile.scoreMax * 0.72),
+    scoreMax: profile.scoreMax,
+    band: "第三档-第二档边缘",
+    outline: buildLocalOutline(data, essay),
+    patterns: buildLocalPatterns(),
+    vocab: buildLocalVocab(),
+    diagnosis: buildLocalDiagnosis(data, words),
   };
 }
 
-function clearNode(node) {
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
+async function generateResult(data) {
+  if (location.protocol !== "file:") {
+    try {
+      showToast("正在生成提纲、作文与阅卷诊断");
+      return await createRemoteResult(data);
+    } catch (error) {
+      console.warn(error);
+      showToast("Qwen 暂不可用，已切回本地示例");
+    }
   }
+
+  return createLocalResult(data);
 }
 
-function addTextElement(parent, tag, text, className) {
-  const element = document.createElement(tag);
-  if (className) element.className = className;
-  element.textContent = text;
-  parent.appendChild(element);
-  return element;
-}
-
-function renderTags(result) {
-  clearNode(essayTags);
-  const profile = examProfiles[result.data.examType];
-  const tags = [
-    profile.name,
-    `${profile.targetUnit} ${result.data.targetBand}`,
-    `${profile.wordGoal} words`,
-    levelProfiles[result.data.level].label,
-    complexityNames[result.data.complexity],
-  ];
-
-  tags.forEach((tag) => {
-    addTextElement(essayTags, "span", tag, "pill");
+async function createRemoteResult(data) {
+  const response = await fetch("/api/generate-postgraduate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.message || payload.detail || payload.error || "Qwen API failed");
+  }
+
+  const essay = asArray(payload.essay).length ? asArray(payload.essay) : buildLocalEssay(data);
+  const profile = examPaperProfiles[data.examPaper];
+
+  return {
+    data,
+    provider: payload.provider || "dashscope",
+    model: payload.model,
+    usage: payload.usage,
+    title: payload.title || `${profile.label}高分修订稿`,
+    essay,
+    words: payload.words || countWords(essay),
+    score: payload.score || Math.round(profile.scoreMax * 0.82),
+    scoreMax: payload.scoreMax || profile.scoreMax,
+    band: payload.band || "第二档",
+    scoreBasis: payload.scoreBasis || "",
+    outline: asArray(payload.outline).length ? payload.outline : buildLocalOutline(data, essay),
+    patterns: asArray(payload.patterns).length ? payload.patterns : buildLocalPatterns(),
+    vocab: asArray(payload.vocab).length ? payload.vocab : buildLocalVocab(),
+    diagnosis: buildDiagnosisCards(payload, data),
+  };
 }
 
-function renderEssay(result) {
-  clearNode(essayOutput);
-  result.essay.forEach((paragraph) => {
-    addTextElement(essayOutput, "p", paragraph);
-  });
-}
+function buildDiagnosisCards(payload, data) {
+  const cards = [];
 
-function renderOutline(result) {
-  clearNode(outlineOutput);
-  result.outline.forEach((item, index) => {
-    const card = document.createElement("article");
-    card.className = "outline-item";
-    addTextElement(card, "small", `P${index + 1}`);
-    addTextElement(card, "strong", item.name);
-    addTextElement(card, "p", item.focus);
-    outlineOutput.appendChild(card);
+  cards.push({
+    title: `预估档位：${payload.band || "待判断"}`,
+    text: payload.scoreBasis || "模型未返回详细给分依据。",
   });
-}
 
-function renderPatterns(result) {
-  clearNode(patternOutput);
-  result.patterns.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "sentence-card";
-    addTextElement(card, "strong", item.title);
-    addTextElement(card, "p", item.note);
-    addTextElement(card, "code", item.pattern);
-    patternOutput.appendChild(card);
+  asArray(payload.revisionNotes).forEach((note, index) => {
+    cards.push({ title: `修订建议 ${index + 1}`, text: String(note) });
   });
-}
 
-function renderVocab(result) {
-  clearNode(vocabOutput);
-  result.vocab.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "vocab-item";
-    addTextElement(card, "strong", item.word);
-    addTextElement(card, "p", item.cn);
-    const tagWrap = document.createElement("div");
-    item.tags.forEach((tag) => addTextElement(tagWrap, "span", tag));
-    card.appendChild(tagWrap);
-    addTextElement(card, "p", item.use);
-    vocabOutput.appendChild(card);
+  asArray(payload.grammarFixes).forEach((item, index) => {
+    cards.push({
+      title: item.point || `语法提醒 ${index + 1}`,
+      text: [item.explanation, item.example, item.correction].filter(Boolean).join(" "),
+    });
   });
-}
 
-function renderDiagnosis(result) {
-  clearNode(diagnosisOutput);
-  result.diagnosis.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "diagnosis-item";
-    addTextElement(card, "strong", item.title);
-    addTextElement(card, "p", item.text);
-    diagnosisOutput.appendChild(card);
-  });
+  asArray(payload.diagnosis).forEach((item) => cards.push(item));
+
+  if (cards.length <= 1) {
+    return buildLocalDiagnosis(data, payload.words || 0);
+  }
+
+  return cards.slice(0, 8);
 }
 
 function renderResult(result) {
-  const profile = examProfiles[result.data.examType];
   currentResult = result;
-  resultTitle.textContent = `${profile.name} 定制作文`;
-  matchScore.textContent = `${result.score}%`;
+  resultTitle.textContent = result.title;
+  matchScore.textContent = `${result.score}/${result.scoreMax}`;
   wordCount.textContent = String(result.words);
-  toneLabel.textContent = profile.tone;
+  toneLabel.textContent = result.provider === "dashscope" ? "Qwen" : "本地";
   scoreNumber.textContent = result.score;
+  scoreCaption.textContent = `${result.scoreMax} 分制`;
 
   renderTags(result);
   renderEssay(result);
@@ -454,33 +360,107 @@ function renderResult(result) {
   renderDiagnosis(result);
 }
 
+function renderTags(result) {
+  clearNode(essayTags);
+  const profile = examPaperProfiles[result.data.examPaper];
+  const tags = [
+    result.provider === "dashscope" ? "Qwen API" : "本地示例",
+    profile.label,
+    taskTypeProfiles[result.data.taskType],
+    `${result.score}/${result.scoreMax}`,
+    result.band,
+    targetScoreProfiles[result.data.targetScore],
+    userLevelProfiles[result.data.userLevel].label,
+  ];
+  if (result.model) tags.push(result.model);
+  tags.filter(Boolean).forEach((tag) => addTextElement(essayTags, "span", tag, "pill"));
+}
+
+function renderEssay(result) {
+  clearNode(essayOutput);
+  result.essay.forEach((paragraph) => addTextElement(essayOutput, "p", paragraph));
+}
+
+function renderOutline(result) {
+  clearNode(outlineOutput);
+  result.outline.forEach((item, index) => {
+    const card = document.createElement("article");
+    card.className = "outline-item";
+    addTextElement(card, "small", `P${index + 1}`);
+    addTextElement(card, "strong", item.name || `段落 ${index + 1}`);
+    addTextElement(card, "p", item.focus || item.text || "");
+    outlineOutput.appendChild(card);
+  });
+}
+
+function renderPatterns(result) {
+  clearNode(patternOutput);
+  result.patterns.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "sentence-card";
+    addTextElement(card, "strong", item.title || "句型");
+    addTextElement(card, "p", item.note || "");
+    addTextElement(card, "code", item.pattern || "");
+    patternOutput.appendChild(card);
+  });
+}
+
+function renderVocab(result) {
+  clearNode(vocabOutput);
+  result.vocab.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "vocab-item";
+    addTextElement(card, "strong", item.word || "");
+    addTextElement(card, "p", item.cn || "");
+    const tagWrap = document.createElement("div");
+    asArray(item.tags).forEach((tag) => addTextElement(tagWrap, "span", tag));
+    card.appendChild(tagWrap);
+    addTextElement(card, "p", item.use || "");
+    vocabOutput.appendChild(card);
+  });
+}
+
+function renderDiagnosis(result) {
+  clearNode(diagnosisOutput);
+  result.diagnosis.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "diagnosis-item";
+    addTextElement(card, "strong", item.title || "诊断");
+    addTextElement(card, "p", item.text || "");
+    diagnosisOutput.appendChild(card);
+  });
+}
+
 function buildMarkdown(result) {
-  const profile = examProfiles[result.data.examType];
-  const lines = [
-    `# ${profile.name} 定制作文`,
+  return [
+    `# ${result.title}`,
     "",
-    `- 目标档位：${result.data.targetBand}`,
-    `- 当前水平：${levelProfiles[result.data.level].label}`,
-    `- 表达难度：${complexityNames[result.data.complexity]}`,
-    `- 匹配度：${result.score}%`,
+    `- 考试版本：${examPaperProfiles[result.data.examPaper].label}`,
+    `- 题型：${taskTypeProfiles[result.data.taskType]}`,
+    `- 评分：${result.score}/${result.scoreMax}`,
+    `- 档位：${result.band || ""}`,
     `- 词数：${result.words}`,
+    `- 来源：${result.provider === "dashscope" ? result.model || "Qwen" : "本地示例"}`,
     "",
-    "## 作文",
+    "## 高分稿",
     "",
     ...result.essay.flatMap((paragraph) => [paragraph, ""]),
-    "## 结构",
+    "## 提纲",
     "",
-    ...result.outline.map((item, index) => `${index + 1}. ${item.name}：${item.focus}`),
+    ...result.outline.map((item, index) => `${index + 1}. ${item.name}: ${item.focus}`),
     "",
-    "## 可迁移句型",
+    "## 句型",
     "",
-    ...result.patterns.map((item) => `- ${item.title}：${item.pattern}`),
+    ...result.patterns.map((item) => `- ${item.title}: ${item.pattern}`),
     "",
-    "## 词汇包",
+    "## 词汇",
     "",
-    ...result.vocab.map((item) => `- ${item.word}：${item.cn}。${item.use}`),
-  ];
-  return lines.join("\n");
+    ...result.vocab.map((item) => `- ${item.word}: ${item.cn}. ${item.use}`),
+    "",
+    "## 评分与建议",
+    "",
+    ...result.diagnosis.map((item) => `- ${item.title}: ${item.text}`),
+  ].join("\n");
 }
 
 async function copyMarkdown() {
@@ -512,7 +492,7 @@ function downloadMarkdown() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "essay-ai-result.md";
+  link.download = "postgraduate-essay-result.md";
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -520,22 +500,55 @@ function downloadMarkdown() {
   showToast("已导出 Markdown");
 }
 
-function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("show");
-  window.clearTimeout(showToast.timer);
-  showToast.timer = window.setTimeout(() => {
-    toast.classList.remove("show");
-  }, 1800);
+function clearNode(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function addTextElement(parent, tag, text, className) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  element.textContent = text;
+  parent.appendChild(element);
+  return element;
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function countWords(paragraphs) {
+  return paragraphs
+    .join(" ")
+    .split(/\s+/)
+    .filter((word) => /[A-Za-z]/.test(word)).length;
 }
 
 function updateComplexityLabel() {
   complexityLabel.textContent = complexityNames[complexityInput.value];
 }
 
+function setGenerating(isGenerating) {
+  submitButton.disabled = isGenerating;
+  sampleButton.disabled = isGenerating;
+  submitButton.querySelector("span").textContent = isGenerating ? "生成中" : "生成高分稿";
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+}
+
 function loadSample() {
+  examPaperInput.value = "english2";
+  taskTypeInput.value = "text-discussion";
+  targetScoreInput.value = "high";
+  userLevelInput.value = "intermediate";
+  ideaPolicyInput.value = "optimize";
   topicInput.value = sample.topic;
   ideasInput.value = sample.ideas;
+  complexityInput.value = "3";
   updateComplexityLabel();
 }
 
@@ -543,34 +556,39 @@ document.querySelectorAll(".tab-button").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
     document.querySelectorAll(".result-panel").forEach((panel) => panel.classList.remove("active"));
-
     button.classList.add("active");
     document.querySelector(`#panel-${button.dataset.tab}`).classList.add("active");
   });
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = getFormData();
   if (!data.topic) {
-    showToast("请先输入作文题目");
+    showToast("请先输入题目");
     topicInput.focus();
     return;
   }
-  renderResult(createResult(data));
-  showToast("已生成定制作文方案");
+
+  setGenerating(true);
+  try {
+    renderResult(await generateResult(data));
+    showToast("已生成考研大作文方案");
+  } finally {
+    setGenerating(false);
+  }
 });
 
 complexityInput.addEventListener("input", updateComplexityLabel);
 sampleButton.addEventListener("click", () => {
   loadSample();
-  renderResult(createResult(getFormData()));
+  renderResult(createLocalResult(getFormData()));
 });
 copyButton.addEventListener("click", copyMarkdown);
 downloadButton.addEventListener("click", downloadMarkdown);
 
 loadSample();
-renderResult(createResult(getFormData()));
+renderResult(createLocalResult(getFormData()));
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {

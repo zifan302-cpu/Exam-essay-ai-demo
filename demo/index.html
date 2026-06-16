@@ -3,86 +3,93 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>二语考试作文 AI 辅助器 Demo</title>
+    <title>考研英语大作文 AI 训练器</title>
     <meta name="theme-color" content="#176b87" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="作文 AI" />
+    <meta name="apple-mobile-web-app-title" content="考研作文 AI" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app-shell">
-      <aside class="input-panel" aria-label="作文生成参数">
+      <aside class="input-panel" aria-label="考研英语大作文生成参数">
         <div class="brand-row">
-          <div class="brand-mark" aria-hidden="true">EA</div>
+          <div class="brand-mark" aria-hidden="true">PG</div>
           <div>
-            <h1>二语作文 AI 辅助器</h1>
-            <p>考试定制 · 个人化表达 · 语料沉淀</p>
+            <h1>考研英语大作文 AI 训练器</h1>
+            <p>提纲规划 · 高分成文 · 阅卷诊断</p>
           </div>
         </div>
 
         <form id="essayForm" class="control-form">
           <div class="field-grid two">
             <label class="field">
-              <span>考试类型</span>
-              <select id="examType" name="examType">
-                <option value="ielts">IELTS Task 2</option>
-                <option value="postgraduate">考研英语大作文</option>
-                <option value="cet">四六级议论文</option>
+              <span>考试版本</span>
+              <select id="examPaper" name="examPaper">
+                <option value="english2" selected>英语二大作文</option>
+                <option value="english1">英语一大作文</option>
               </select>
             </label>
 
             <label class="field">
-              <span>目标档位</span>
-              <select id="targetBand" name="targetBand">
-                <option value="6.5">稳妥 6.5</option>
-                <option value="7.0" selected>冲刺 7.0</option>
-                <option value="7.5">高分 7.5+</option>
+              <span>题型</span>
+              <select id="taskType" name="taskType">
+                <option value="text-discussion" selected>文字材料议论文</option>
+                <option value="chart-description">图表/图画文字描述</option>
               </select>
             </label>
           </div>
 
           <div class="field-grid two">
             <label class="field">
-              <span>当前水平</span>
-              <select id="level" name="level">
-                <option value="foundation">基础可用</option>
-                <option value="intermediate" selected>中等进阶</option>
-                <option value="advanced">冲刺高分</option>
+              <span>目标分档</span>
+              <select id="targetScore" name="targetScore">
+                <option value="safe">稳妥提分</option>
+                <option value="high" selected>高分冲刺</option>
+                <option value="excellent">范文级表达</option>
               </select>
             </label>
 
             <label class="field">
-              <span>立场</span>
-              <select id="stance" name="stance">
-                <option value="balanced" selected>双边后表态</option>
-                <option value="support">倾向支持</option>
-                <option value="oppose">倾向反对</option>
+              <span>当前水平</span>
+              <select id="userLevel" name="userLevel">
+                <option value="foundation">基础稳分</option>
+                <option value="intermediate" selected>中等提分</option>
+                <option value="advanced">高分冲刺</option>
               </select>
             </label>
           </div>
 
           <label class="field">
-            <span>作文题目</span>
+            <span>题目 / 图表文字描述</span>
             <textarea id="topic" name="topic" rows="5"></textarea>
           </label>
 
           <label class="field">
-            <span>自己的思路</span>
+            <span>你的观点与素材</span>
             <textarea id="ideas" name="ideas" rows="5"></textarea>
+          </label>
+
+          <label class="field">
+            <span>思路保留方式</span>
+            <select id="ideaPolicy" name="ideaPolicy">
+              <option value="preserve">尽量保留我的观点</option>
+              <option value="optimize" selected>保留核心并优化论证</option>
+              <option value="rebuild">只保留主题方向，重建高分论证</option>
+            </select>
           </label>
 
           <div class="range-field">
             <div class="range-title">
-              <span>表达难度</span>
-              <strong id="complexityLabel">适中</strong>
+              <span>表达策略</span>
+              <strong id="complexityLabel">标准高分</strong>
             </div>
             <input id="complexity" name="complexity" type="range" min="1" max="5" value="3" />
             <div class="range-scale" aria-hidden="true">
-              <span>稳</span>
-              <span>自然</span>
-              <span>亮眼</span>
+              <span>稳妥</span>
+              <span>标准</span>
+              <span>亮点</span>
             </div>
           </div>
 
@@ -92,7 +99,7 @@
                 <path d="M12 2.75 13.93 8l5.32 1.93-5.32 1.93L12 17.25l-1.93-5.39-5.32-1.93L10.07 8 12 2.75Z" />
                 <path d="M19 15.5 20 18l2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" />
               </svg>
-              <span>生成方案</span>
+              <span>生成高分稿</span>
             </button>
             <button class="ghost-button" id="sampleButton" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -108,12 +115,12 @@
       <main class="workspace" aria-live="polite">
         <header class="workspace-top">
           <div>
-            <p class="kicker">Writing Studio</p>
-            <h2 id="resultTitle">定制作文方案</h2>
+            <p class="kicker">Postgraduate Writing Studio</p>
+            <h2 id="resultTitle">考研英语大作文高分稿</h2>
           </div>
           <div class="metrics-strip" aria-label="生成指标">
             <div class="metric">
-              <span>匹配度</span>
+              <span>评分</span>
               <strong id="matchScore">--</strong>
             </div>
             <div class="metric">
@@ -121,7 +128,7 @@
               <strong id="wordCount">--</strong>
             </div>
             <div class="metric">
-              <span>语体</span>
+              <span>来源</span>
               <strong id="toneLabel">--</strong>
             </div>
           </div>
@@ -146,7 +153,7 @@
               <path d="M3.5 12h.01" />
               <path d="M3.5 18h.01" />
             </svg>
-            <span>结构</span>
+            <span>提纲</span>
           </button>
           <button class="tab-button" type="button" data-tab="patterns">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -171,7 +178,7 @@
               <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" />
               <path d="m9 12 2 2 4-5" />
             </svg>
-            <span>诊断</span>
+            <span>评分</span>
           </button>
         </nav>
 
@@ -199,8 +206,8 @@
 
         <section class="result-panel" id="panel-outline">
           <div class="section-heading">
-            <p class="kicker">Argument Map</p>
-            <h3>文章结构</h3>
+            <p class="kicker">Outline First</p>
+            <h3>成文提纲</h3>
           </div>
           <div class="outline-grid" id="outlineOutput"></div>
         </section>
@@ -223,14 +230,14 @@
 
         <section class="result-panel" id="panel-diagnosis">
           <div class="section-heading">
-            <p class="kicker">Revision Notes</p>
-            <h3>诊断建议</h3>
+            <p class="kicker">Examiner Notes</p>
+            <h3>阅卷评分与修改建议</h3>
           </div>
           <div class="diagnosis-layout">
             <div class="score-wheel">
               <div>
                 <span id="scoreNumber">--</span>
-                <small>目标匹配</small>
+                <small id="scoreCaption">预估评分</small>
               </div>
             </div>
             <div class="diagnosis-list" id="diagnosisOutput"></div>

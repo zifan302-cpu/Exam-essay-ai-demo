@@ -1,5 +1,11 @@
 dist/
+docs/
 node_modules/
 .vercel/
 .edge-profile/
 *.log
+*.pid
+dist-preview.png
+.env
+.env.*
+!.env.example
