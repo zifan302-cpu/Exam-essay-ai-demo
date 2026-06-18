@@ -110,6 +110,48 @@ api/generate-postgraduate.js
 https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
 ```
 
+## 部署到 Tencent EdgeOne Pages
+
+推荐配置：
+
+```text
+框架预设：Other
+生产分支：main
+根目录：./
+构建命令：npm run build
+安装命令：npm install
+输出目录：dist
+Node.js 版本：22.x
+```
+
+环境变量：
+
+```text
+DASHSCOPE_API_KEY=你的阿里云百炼 API Key
+DASHSCOPE_MODEL=qwen3.7-plus
+```
+
+项目同时提供两套服务端适配：
+
+```text
+api/generate-postgraduate.js              Vercel / 本地 dev 兼容
+functions/api/generate-postgraduate.js    Pages Functions 兼容
+```
+
+EdgeOne 部署后请先访问：
+
+```text
+https://你的域名/api/generate-postgraduate
+```
+
+正常情况下应返回 JSON：
+
+```json
+{"error":"method_not_allowed"}
+```
+
+如果返回 404、HTML 首页或静态页面，说明 EdgeOne 当前项目没有启用或识别 Pages Functions。此时需要在 EdgeOne 控制台确认是否有 Functions/边缘函数开关；如果没有该能力，就需要把后端接口部署到腾讯云函数或 CloudBase，并把前端请求地址改成该函数的 HTTP URL。
+
 ### 方式一：Vercel 网页导入
 
 1. 把本项目推到 GitHub。
